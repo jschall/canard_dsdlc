@@ -25,25 +25,29 @@
 @[  if msg.union]
 enum @(underscored_name(msg))_type_t {
 @[    for field in msg.fields]@
-    @(underscored_name(msg).upper())_TYPE_@(field.name.upper()),
+    @(field_union_type_enum_name(msg, field)),
 @[    end for]@
 };
 @[  end if]@
 
-struct @(underscored_name(msg))_s {
+@(uavcan_type_to_ctype(msg)) {
 @[  if msg.union]@
     enum @(underscored_name(msg))_type_t @(underscored_name(msg))_type;
     union {
 @[    for field in msg.fields]@
+@[      if field.type.category != field.type.CATEGORY_VOID]@
         @(field_cdef(field));
+@[      end if]@
 @[    end for]@
     };
 @[  else]@
 @[    for field in msg.fields]@
+@[      if field.type.category != field.type.CATEGORY_VOID]@
     @(field_cdef(field));
+@[      end if]@
 @[    end for]@
 @[  end if]@
 };
 
-@#//if msg.kind == msg.KIND_MESSAGE
+void _encode_@(underscored_name(msg))(uint8_t buffer[], uint32_t* bit_ofs, @(uavcan_type_to_ctype(msg))* msg, bool tao);
 @[end if]@

@@ -4,29 +4,17 @@ import os
 import em
 from canard_dsdlc_helpers import *
 
-class Template:
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-    def __str__(self):
-        return str(self.__dict__)
-
 templates = [
-    Template(
-        source_file = 'request.h',
-        output_file = 'include/@(msg_header_name_request(msg))',
-    ),
-    Template(
-        source_file = 'response.h',
-        output_file = 'include/@(msg_header_name_response(msg))',
-    ),
-    Template(
-        source_file = 'broadcast.h',
-        output_file = 'include/@(msg_header_name(msg))',
-    ),
-    Template(
-        source_file = 'service.h',
-        output_file = 'include/@(msg_header_name(msg))',
-    ),
+    {'source_file': 'request.h',
+     'output_file': 'include/@(msg_header_name_request(msg))'},
+    {'source_file': 'response.h',
+     'output_file': 'include/@(msg_header_name_response(msg))'},
+    {'source_file': 'broadcast.h',
+     'output_file': 'include/@(msg_header_name(msg))'},
+    {'source_file': 'service.h',
+     'output_file': 'include/@(msg_header_name(msg))'},
+    {'source_file': 'msg.c',
+     'output_file': 'src/@(msg_c_file_name(msg))'},
 ]
 
 parser = argparse.ArgumentParser()
@@ -44,18 +32,18 @@ if os.path.exists(build_dir):
 messages = uavcan.dsdl.parse_namespaces(namespace_paths)
 
 for template in templates:
-    with open(os.path.join(templates_dir, template.source_file), 'rb') as f:
-        template.source = f.read()
+    with open(os.path.join(templates_dir, template['source_file']), 'rb') as f:
+        template['source'] = f.read()
 
 for msg in messages:
     print msg.full_name
     for template in templates:
-        output_file = os.path.join(build_dir, em.expand('@{from canard_dsdlc_helpers import *}'+template.output_file, msg=msg))
-        output = em.expand(template.source, msg=msg)
+        output = em.expand(template['source'], msg=msg)
 
         if not output.strip():
             continue
 
+        output_file = os.path.join(build_dir, em.expand('@{from canard_dsdlc_helpers import *}'+template['output_file'], msg=msg))
         mkdir_p(os.path.dirname(output_file))
         with open(output_file, 'wb') as f:
             f.write(output)

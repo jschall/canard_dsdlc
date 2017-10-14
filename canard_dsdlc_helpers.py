@@ -5,8 +5,20 @@ import em
 import math
 import copy
 
-def array_len_field_bitlen(max_size):
-    return int(math.ceil(math.log(max_size+1,2)))
+def field_union_type_enum_name(msg, field):
+    return '%s_TYPE_%s' % (underscored_name(msg).upper(), field.name.upper())
+
+def union_msg_tag_ctype(msg):
+    assert msg.union
+    return 'uint%u_t' % (c_int_type_bitlen(union_msg_tag_bitlen(msg)),)
+
+def union_msg_tag_bitlen(msg):
+    assert msg.union
+    return int(math.ceil(math.log(len(msg.fields),2)))
+
+def array_len_field_bitlen(array_type):
+    assert array_type.category == array_type.CATEGORY_ARRAY
+    return int(math.ceil(math.log(array_type.max_size+1,2)))
 
 def c_int_type_bitlen(bitlen):
     for ret in (8, 16, 32, 64):
@@ -14,6 +26,7 @@ def c_int_type_bitlen(bitlen):
             return ret
 
 def uavcan_type_to_ctype(uavcan_type):
+    assert uavcan_type.category != uavcan_type.CATEGORY_VOID
     if uavcan_type.category == uavcan_type.CATEGORY_COMPOUND:
         return 'struct %s_s' % (underscored_name(uavcan_type))
     elif uavcan_type.category == uavcan_type.CATEGORY_PRIMITIVE:
@@ -27,23 +40,14 @@ def uavcan_type_to_ctype(uavcan_type):
             return 'float' if uavcan_type.bitlen <= 32 else 'double'
 
 def field_cdef(field):
+    assert field.type.category != field.type.CATEGORY_VOID
     if field.type.category == field.type.CATEGORY_ARRAY:
         if field.type.mode == field.type.MODE_STATIC:
             return '%s %s[%u]' % (uavcan_type_to_ctype(field.type.value_type), field.name, field.type.max_size)
         else:
-            return 'struct {uint%u_t %s_len; %s %s[%u]}' % (c_int_type_bitlen(array_len_field_bitlen(field.type.max_size)), field.name, uavcan_type_to_ctype(field.type.value_type), field.name, field.type.max_size)
+            return 'struct {uint%u_t %s_len; %s %s[%u]}' % (c_int_type_bitlen(array_len_field_bitlen(field.type)), field.name, uavcan_type_to_ctype(field.type.value_type), field.name, field.type.max_size)
     else:
         return '%s %s' % (uavcan_type_to_ctype(field.type), field.name)
-
-
-def ctype(obj):
-    if isinstance(obj, uavcan.dsdl.Field):
-        obj = obj.type
-
-    if obj.category == uavcan.dsdl.Type.CATEGORY_PRIMITIVE:
-        return obj.full_name
-    if obj.category == uavcan.dsdl.Type.CATEGORY_COMPOUND:
-        return 'struct %s_s' % (underscored_name(obj),)
 
 def indent(string, n):
     if string.strip():
@@ -54,17 +58,36 @@ def indent(string, n):
 def msg_header_name_request(obj):
     if isinstance(obj, uavcan.dsdl.Field):
         obj = obj.type
+    assert obj.category == obj.CATEGORY_COMPOUND and obj.kind == obj.KIND_SERVICE
     return os.path.join(rel_path(obj), '%s_Request.h' % (short_name(obj),))
 
 def msg_header_name_response(obj):
     if isinstance(obj, uavcan.dsdl.Field):
         obj = obj.type
+    assert obj.category == obj.CATEGORY_COMPOUND and obj.kind == obj.KIND_SERVICE
     return os.path.join(rel_path(obj), '%s_Response.h' % (short_name(obj),))
 
 def msg_header_name(obj):
     if isinstance(obj, uavcan.dsdl.Field):
         obj = obj.type
     return os.path.join(rel_path(obj), '%s.h' % (short_name(obj),))
+
+def msg_c_file_name_request(obj):
+    if isinstance(obj, uavcan.dsdl.Field):
+        obj = obj.type
+    assert obj.category == obj.CATEGORY_COMPOUND and obj.kind == obj.KIND_SERVICE
+    return os.path.join(rel_path(obj), '%s_Request.c' % (short_name(obj),))
+
+def msg_c_file_name_response(obj):
+    if isinstance(obj, uavcan.dsdl.Field):
+        obj = obj.type
+    assert obj.category == obj.CATEGORY_COMPOUND and obj.kind == obj.KIND_SERVICE
+    return os.path.join(rel_path(obj), '%s_Response.c' % (short_name(obj),))
+
+def msg_c_file_name(obj):
+    if isinstance(obj, uavcan.dsdl.Field):
+        obj = obj.type
+    return os.path.join(rel_path(obj), '%s.c' % (short_name(obj),))
 
 def underscored_name(obj):
     return obj.full_name.replace('.','_')
