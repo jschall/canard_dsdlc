@@ -10,13 +10,23 @@ class Template:
     def __str__(self):
         return str(self.__dict__)
 
-template_prepend = '@{from canard_dsdlc_helpers import *}'
-
 templates = [
     Template(
-        source_file = 'msg.h',
+        source_file = 'request.h',
+        output_file = 'include/@(msg_header_name_request(msg))',
+    ),
+    Template(
+        source_file = 'response.h',
+        output_file = 'include/@(msg_header_name_response(msg))',
+    ),
+    Template(
+        source_file = 'broadcast.h',
         output_file = 'include/@(msg_header_name(msg))',
-    )
+    ),
+    Template(
+        source_file = 'service.h',
+        output_file = 'include/@(msg_header_name(msg))',
+    ),
 ]
 
 parser = argparse.ArgumentParser()
@@ -40,8 +50,8 @@ for template in templates:
 for msg in messages:
     print msg.full_name
     for template in templates:
-        output_file = os.path.join(build_dir, em.expand(template_prepend+template.output_file, msg=msg))
-        output = em.expand(template_prepend+template.source, msg=msg)
+        output_file = os.path.join(build_dir, em.expand('@{from canard_dsdlc_helpers import *}'+template.output_file, msg=msg))
+        output = em.expand(template.source, msg=msg)
 
         if not output.strip():
             continue
