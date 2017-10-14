@@ -13,7 +13,11 @@ templates = [
      'output_file': 'include/@(msg_header_name(msg))'},
     {'source_file': 'service.h',
      'output_file': 'include/@(msg_header_name(msg))'},
-    {'source_file': 'msg.c',
+    {'source_file': 'request.c',
+     'output_file': 'src/@(msg_c_file_name_request(msg))'},
+    {'source_file': 'response.c',
+     'output_file': 'src/@(msg_c_file_name_response(msg))'},
+    {'source_file': 'broadcast.c',
      'output_file': 'src/@(msg_c_file_name(msg))'},
 ]
 
@@ -36,7 +40,7 @@ for template in templates:
         template['source'] = f.read()
 
 for msg in messages:
-    print msg.full_name
+    print(msg.full_name)
     for template in templates:
         output = em.expand(template['source'], msg=msg)
 

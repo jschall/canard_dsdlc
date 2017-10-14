@@ -3,8 +3,6 @@
 #pragma once
 
 #include <stdint.h>
-#include <float16.h>
-#include <string.h>
 
 @[  for field in msg.fields]@
 @[    if field.type.category == field.type.CATEGORY_COMPOUND]@
@@ -48,6 +46,8 @@ enum @(underscored_name(msg))_type_t {
 @[    end for]@
 @[  end if]@
 };
-
-void _encode_@(underscored_name(msg))(uint8_t buffer[], uint32_t* bit_ofs, @(uavcan_type_to_ctype(msg))* msg, bool tao);
+uint32_t encode_@(underscored_name(msg))(uint8_t* buffer, @(uavcan_type_to_ctype(msg))* msg);
+uint32_t decode_@(underscored_name(msg))(const CanardRxTransfer* transfer, @(uavcan_type_to_ctype(msg))* msg);
+void _encode_@(underscored_name(msg))(uint8_t* buffer, uint32_t* bit_ofs, @(uavcan_type_to_ctype(msg))* msg, bool tao);
+void _decode_@(underscored_name(msg))(const CanardRxTransfer* transfer, uint32_t* bit_ofs, @(uavcan_type_to_ctype(msg))* msg, bool tao)
 @[end if]@

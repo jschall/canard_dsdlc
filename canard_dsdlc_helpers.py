@@ -5,6 +5,17 @@ import em
 import math
 import copy
 
+def uavcan_type_is_signed(uavcan_type):
+    assert uavcan_type.category == uavcan_type.CATEGORY_PRIMITIVE
+    if uavcan_type.kind == uavcan_type.KIND_BOOLEAN:
+        return False
+    elif uavcan_type.kind == uavcan_type.KIND_UNSIGNED_INT:
+        return False
+    elif uavcan_type.kind == uavcan_type.KIND_SIGNED_INT:
+        return True
+    elif uavcan_type.kind == uavcan_type.KIND_FLOAT:
+        return True
+
 def field_union_type_enum_name(msg, field):
     return '%s_TYPE_%s' % (underscored_name(msg).upper(), field.name.upper())
 
