@@ -1,13 +1,16 @@
 @{from canard_dsdlc_helpers import *}@
 #pragma once
-
+#include <canard.h>
+#include <stdbool.h>
 #include <stdint.h>
 
 @{
 dep_headers = set()
 for field in msg_fields:
     if field.type.category == field.type.CATEGORY_COMPOUND:
-        dep_headers.add(msg_header_name(field))
+        dep_headers.add(msg_header_name(field.type))
+    if field.type.category == field.type.CATEGORY_ARRAY and field.type.value_type.category == field.type.value_type.CATEGORY_COMPOUND:
+        dep_headers.add(msg_header_name(field.type.value_type))
 }@
 @[  for header in dep_headers]@
 #include <@(header)>
@@ -26,7 +29,7 @@ for field in msg_fields:
 @[  if msg_union]
 enum @(msg_underscored_name)_type_t {
 @[    for field in msg_fields]@
-    @(msg_underscored_name.upper())_TYPE_@(field.name.upper())
+    @(msg_underscored_name.upper())_TYPE_@(field.name.upper()),
 @[    end for]@
 };
 @[  end if]@
@@ -53,4 +56,4 @@ enum @(msg_underscored_name)_type_t {
 uint32_t encode_@(msg_underscored_name)(uint8_t* buffer, @(msg_c_type)* msg);
 uint32_t decode_@(msg_underscored_name)(const CanardRxTransfer* transfer, @(msg_c_type)* msg);
 void _encode_@(msg_underscored_name)(uint8_t* buffer, uint32_t* bit_ofs, @(msg_c_type)* msg, bool tao);
-void _decode_@(msg_underscored_name)(const CanardRxTransfer* transfer, uint32_t* bit_ofs, @(msg_c_type)* msg, bool tao)
+void _decode_@(msg_underscored_name)(const CanardRxTransfer* transfer, uint32_t* bit_ofs, @(msg_c_type)* msg, bool tao);

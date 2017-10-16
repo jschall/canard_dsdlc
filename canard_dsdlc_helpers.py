@@ -10,7 +10,7 @@ def get_empy_env_request(msg):
     msg_underscored_name = msg.full_name.replace('.','_')+'_req'
     return {
         'msg_underscored_name': msg_underscored_name,
-        'msg_header_name': msg_header_name_request(msg),
+        'msg_header_file_name': msg_header_name_request(msg),
         'msg_c_type': underscored_name_to_ctype(msg_underscored_name),
         'msg_union': msg.request_union,
         'msg_fields': msg.request_fields,
@@ -25,7 +25,7 @@ def get_empy_env_response(msg):
     msg_underscored_name = msg.full_name.replace('.','_')+'_res'
     return {
         'msg_underscored_name': msg_underscored_name,
-        'msg_header_name': msg_header_name_response(msg),
+        'msg_header_file_name': msg_header_name_response(msg),
         'msg_c_type': underscored_name_to_ctype(msg_underscored_name),
         'msg_union': msg.response_union,
         'msg_fields': msg.response_fields,
@@ -40,7 +40,7 @@ def get_empy_env_broadcast(msg):
     msg_underscored_name = msg.full_name.replace('.','_')
     return {
         'msg_underscored_name': msg_underscored_name,
-        'msg_header_name': msg_header_name(msg),
+        'msg_header_file_name': msg_header_name(msg),
         'msg_c_type': underscored_name_to_ctype(msg_underscored_name),
         'msg_union': msg.union,
         'msg_fields': msg.fields,
@@ -106,7 +106,7 @@ def field_cdef(field):
         if field.type.mode == field.type.MODE_STATIC:
             return '%s %s[%u]' % (uavcan_type_to_ctype(field.type.value_type), field.name, field.type.max_size)
         else:
-            return 'struct {uint%u_t %s_len; %s %s[%u]}' % (c_int_type_bitlen(array_len_field_bitlen(field.type)), field.name, uavcan_type_to_ctype(field.type.value_type), field.name, field.type.max_size)
+            return 'struct {uint%u_t %s_len; %s %s[%u];}' % (c_int_type_bitlen(array_len_field_bitlen(field.type)), field.name, uavcan_type_to_ctype(field.type.value_type), field.name, field.type.max_size)
     else:
         return '%s %s' % (uavcan_type_to_ctype(field.type), field.name)
 
@@ -120,35 +120,35 @@ def msg_header_name_request(obj):
     if isinstance(obj, uavcan.dsdl.Field):
         obj = obj.type
     assert obj.category == obj.CATEGORY_COMPOUND and obj.kind == obj.KIND_SERVICE
-    return os.path.join(rel_path(obj), '%s_Request.h' % (short_name(obj),))
+    return '%s_Request.h' % (obj.full_name,)
 
 def msg_header_name_response(obj):
     if isinstance(obj, uavcan.dsdl.Field):
         obj = obj.type
     assert obj.category == obj.CATEGORY_COMPOUND and obj.kind == obj.KIND_SERVICE
-    return os.path.join(rel_path(obj), '%s_Response.h' % (short_name(obj),))
+    return '%s_Response.h' % (obj.full_name,)
 
 def msg_header_name(obj):
     if isinstance(obj, uavcan.dsdl.Field):
         obj = obj.type
-    return os.path.join(rel_path(obj), '%s.h' % (short_name(obj),))
+    return '%s.h' % (obj.full_name,)
 
 def msg_c_file_name_request(obj):
     if isinstance(obj, uavcan.dsdl.Field):
         obj = obj.type
     assert obj.category == obj.CATEGORY_COMPOUND and obj.kind == obj.KIND_SERVICE
-    return os.path.join(rel_path(obj), '%s_Request.c' % (short_name(obj),))
+    return '%s_Request.c' % (obj.full_name,)
 
 def msg_c_file_name_response(obj):
     if isinstance(obj, uavcan.dsdl.Field):
         obj = obj.type
     assert obj.category == obj.CATEGORY_COMPOUND and obj.kind == obj.KIND_SERVICE
-    return os.path.join(rel_path(obj), '%s_Response.c' % (short_name(obj),))
+    return '%s_Response.c' % (obj.full_name,)
 
 def msg_c_file_name(obj):
     if isinstance(obj, uavcan.dsdl.Field):
         obj = obj.type
-    return os.path.join(rel_path(obj), '%s.c' % (short_name(obj),))
+    return '%s.c' % (obj.full_name,)
 
 def underscored_name(obj):
     return obj.full_name.replace('.','_')
