@@ -24,7 +24,18 @@ templates = [
 parser = argparse.ArgumentParser()
 parser.add_argument('namespace_dir', nargs='+')
 parser.add_argument('build_dir', nargs=1)
+parser.add_argument('--buildlist')
 args = parser.parse_args()
+
+buildlist = None
+
+if args.buildlist:
+    buildlist = set()
+    with open(args.buildlist, 'rb') as f:
+        for m in f.readlines():
+            m = m.strip()
+            if m:
+                buildlist.add(m)
 
 namespace_paths = args.namespace_dir
 build_dir = args.build_dir[0]
@@ -39,15 +50,21 @@ for template in templates:
     with open(os.path.join(templates_dir, template['source_file']), 'rb') as f:
         template['source'] = f.read()
 
+builtlist = set()
+
 for msg in messages:
-    print(msg.full_name)
-    for template in templates:
-        output = em.expand(template['source'], msg=msg)
+    if buildlist is None or msg.full_name in buildlist:
+        print 'building %s' % (msg.full_name,)
+        builtlist.add(msg.full_name)
+        for template in templates:
+            output = em.expand(template['source'], msg=msg)
 
-        if not output.strip():
-            continue
+            if not output.strip():
+                continue
 
-        output_file = os.path.join(build_dir, em.expand('@{from canard_dsdlc_helpers import *}'+template['output_file'], msg=msg))
-        mkdir_p(os.path.dirname(output_file))
-        with open(output_file, 'wb') as f:
-            f.write(output)
+            output_file = os.path.join(build_dir, em.expand('@{from canard_dsdlc_helpers import *}'+template['output_file'], msg=msg))
+            mkdir_p(os.path.dirname(output_file))
+            with open(output_file, 'wb') as f:
+                f.write(output)
+
+assert buildlist is not None and not buildlist-builtlist, "%s not built" % (buildlist-builtlist,)
