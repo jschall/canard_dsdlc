@@ -67,4 +67,4 @@ for msg in messages:
             with open(output_file, 'wb') as f:
                 f.write(output)
 
-assert buildlist is not None and not buildlist-builtlist, "%s not built" % (buildlist-builtlist,)
+assert buildlist is None or not buildlist-builtlist, "%s not built" % (buildlist-builtlist,)

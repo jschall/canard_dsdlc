@@ -5,6 +5,51 @@ import em
 import math
 import copy
 
+def get_empy_env_request(msg):
+    assert msg.kind == msg.KIND_SERVICE
+    msg_underscored_name = msg.full_name.replace('.','_')+'_req'
+    return {
+        'msg_underscored_name': msg_underscored_name,
+        'msg_header_name': msg_header_name_request(msg),
+        'msg_c_type': underscored_name_to_ctype(msg_underscored_name),
+        'msg_union': msg.request_union,
+        'msg_fields': msg.request_fields,
+        'msg_constants': msg.request_constants,
+        'msg_max_bitlen': msg.get_max_bitlen_request(),
+        'msg_dt_sig': msg.get_data_type_signature(),
+        'msg_default_dtid': msg.default_dtid
+    }
+
+def get_empy_env_response(msg):
+    assert msg.kind == msg.KIND_SERVICE
+    msg_underscored_name = msg.full_name.replace('.','_')+'_res'
+    return {
+        'msg_underscored_name': msg_underscored_name,
+        'msg_header_name': msg_header_name_response(msg),
+        'msg_c_type': underscored_name_to_ctype(msg_underscored_name),
+        'msg_union': msg.response_union,
+        'msg_fields': msg.response_fields,
+        'msg_constants': msg.response_constants,
+        'msg_max_bitlen': msg.get_max_bitlen_response(),
+        'msg_dt_sig': msg.get_data_type_signature(),
+        'msg_default_dtid': msg.default_dtid
+    }
+
+def get_empy_env_broadcast(msg):
+    assert msg.kind == msg.KIND_MESSAGE
+    msg_underscored_name = msg.full_name.replace('.','_')
+    return {
+        'msg_underscored_name': msg_underscored_name,
+        'msg_header_name': msg_header_name(msg),
+        'msg_c_type': underscored_name_to_ctype(msg_underscored_name),
+        'msg_union': msg.union,
+        'msg_fields': msg.fields,
+        'msg_constants': msg.constants,
+        'msg_max_bitlen': msg.get_max_bitlen(),
+        'msg_dt_sig': msg.get_data_type_signature(),
+        'msg_default_dtid': msg.default_dtid
+    }
+
 def uavcan_type_is_signed(uavcan_type):
     assert uavcan_type.category == uavcan_type.CATEGORY_PRIMITIVE
     if uavcan_type.kind == uavcan_type.KIND_BOOLEAN:
@@ -16,16 +61,11 @@ def uavcan_type_is_signed(uavcan_type):
     elif uavcan_type.kind == uavcan_type.KIND_FLOAT:
         return True
 
-def field_union_type_enum_name(msg, field):
-    return '%s_TYPE_%s' % (underscored_name(msg).upper(), field.name.upper())
+def union_msg_tag_bitlen_from_num_fields(num_fields):
+    return int(math.ceil(math.log(num_fields,2)))
 
-def union_msg_tag_ctype(msg):
-    assert msg.union
-    return 'uint%u_t' % (c_int_type_bitlen(union_msg_tag_bitlen(msg)),)
-
-def union_msg_tag_bitlen(msg):
-    assert msg.union
-    return int(math.ceil(math.log(len(msg.fields),2)))
+def union_msg_tag_uint_type_from_num_fields(num_fields):
+    return c_uint_type_from_bitlen(union_msg_tag_bitlen_from_num_fields(num_fields))
 
 def array_len_field_bitlen(array_type):
     assert array_type.category == array_type.CATEGORY_ARRAY
@@ -36,17 +76,27 @@ def c_int_type_bitlen(bitlen):
         if bitlen <= ret:
             return ret
 
+def c_uint_type_from_bitlen(bitlen):
+    return 'uint%u_t' % (c_int_type_bitlen(bitlen),)
+
+def c_int_type_from_bitlen(bitlen):
+    return 'int%u_t' % (c_int_type_bitlen(bitlen),)
+
+def underscored_name_to_ctype(name):
+    return 'struct %s_s' % (name)
+
 def uavcan_type_to_ctype(uavcan_type):
     assert uavcan_type.category != uavcan_type.CATEGORY_VOID
     if uavcan_type.category == uavcan_type.CATEGORY_COMPOUND:
+        assert uavcan_type.kind == uavcan_type.KIND_MESSAGE
         return 'struct %s_s' % (underscored_name(uavcan_type))
     elif uavcan_type.category == uavcan_type.CATEGORY_PRIMITIVE:
         if uavcan_type.kind == uavcan_type.KIND_BOOLEAN:
             return 'bool'
         elif uavcan_type.kind == uavcan_type.KIND_UNSIGNED_INT:
-            return 'uint%u_t' % (c_int_type_bitlen(uavcan_type.bitlen))
+            return c_uint_type_from_bitlen(uavcan_type.bitlen)
         elif uavcan_type.kind == uavcan_type.KIND_SIGNED_INT:
-            return 'int%u_t' % (c_int_type_bitlen(uavcan_type.bitlen))
+            return c_int_type_from_bitlen(uavcan_type.bitlen)
         elif uavcan_type.kind == uavcan_type.KIND_FLOAT:
             return 'float' if uavcan_type.bitlen <= 32 else 'double'
 
